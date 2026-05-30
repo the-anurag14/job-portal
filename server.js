@@ -1,36 +1,44 @@
-require("dotenv").config();
-
 const express = require("express");
 const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 const cors = require("cors");
 
-const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require("./routes/jobRoutes");
+const authRoutes = require("./routes/authRoutes");
+
+dotenv.config();
 
 const app = express();
+
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect Database
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected ✅"))
-  .catch(err => console.log(err));
 
-// Routes
+
+
+// Test Route
+app.get("/", (req, res) => {
+  res.send("Backend Working 🚀");
+});
+
+
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Job Portal Backend Running 🚀");
+
+// MongoDB
+mongoose.connect(process.env.MONGO_URI)
+.then(() => {
+  console.log("MongoDB Connected ✅");
+})
+.catch((err) => {
+  console.log(err);
 });
 
-app.get("/debug", (req, res) => {
-  res.send("Server routes working");
-});
 
-// Start Server
+// Server
 const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => {

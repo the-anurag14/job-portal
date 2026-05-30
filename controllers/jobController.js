@@ -1,10 +1,67 @@
 const Job = require("../models/Job");
 const Application = require("../models/Application");
+const axios = require("axios");
 
-// POST JOB
+
+// ================== AI MATCH ==================
+exports.matchResume = async (req, res) => {
+  try {
+    const { resumeText, jobId } = req.body;
+
+    if (!resumeText || !jobId) {
+      return res.status(400).json({ message: "Missing data" });
+    }
+
+    const job = await Job.findById(jobId);
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const response = await axios.post("http://localhost:8001/match", {
+      resume: resumeText,
+      job_description: job.description + " " + job.skills.join(" "),
+    });
+
+    const resumeLower = resumeText.toLowerCase();
+    const matchedSkills = (job.skills || []).filter((skill) =>
+      resumeLower.includes(skill.toLowerCase())
+    );
+    const missingSkills = (job.skills || []).filter(
+      (skill) => !matchedSkills.includes(skill)
+    );
+    const score = response.data.match_score;
+
+    let recommendation = "Consider strengthening your profile for this role.";
+    if (score >= 75) {
+      recommendation = "Strong match — this role aligns well with your resume.";
+    } else if (score >= 50) {
+      recommendation = "Moderate match — highlight relevant skills and experience.";
+    }
+
+    res.status(200).json({
+      job: {
+        id: job._id,
+        title: job.title,
+        company: job.company,
+      },
+      score,
+      matchedSkills,
+      missingSkills,
+      recommendation,
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: "AI Service Error" });
+  }
+};
+
+
+// ================== POST JOB ==================
 exports.postJob = async (req, res) => {
   try {
-    const { title, company, location, description, salary } = req.body;
+    const { title, company, location, description, salary, skills } = req.body;
 
     const job = await Job.create({
       title,
@@ -12,12 +69,13 @@ exports.postJob = async (req, res) => {
       location,
       description,
       salary,
-      recruiter: req.user.id
+      skills,
+      recruiter: req.user.id,
     });
 
     res.status(201).json({
       message: "Job posted successfully",
-      job
+      job,
     });
 
   } catch (error) {
@@ -26,24 +84,63 @@ exports.postJob = async (req, res) => {
   }
 };
 
-// GET ALL JOBS
-exports.getAllJobs = async (req, res) => {
+
+// ================== GET JOB BY ID ==================
+exports.getJobById = async (req, res) => {
   try {
+    const job = await Job.findById(req.params.jobId).populate(
+      "recruiter",
+      "name email"
+    );
 
-    const jobs = await Job.find().populate("recruiter", "name email");
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
 
-    res.status(200).json({
-      total: jobs.length,
-      jobs
-    });
-
+    res.status(200).json({ job });
   } catch (error) {
-    res.status(500).json({
-      message: "Server Error"
-    });
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
+
+// ================== RECRUITER JOBS ==================
+exports.getMyJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ recruiter: req.user.id }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      total: jobs.length,
+      jobs,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+// ================== GET ALL JOBS ==================
+exports.getAllJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find();
+
+    res.status(200).json({
+      total: jobs.length,
+      jobs,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+// ================== SEARCH JOBS ==================
 exports.searchJobs = async (req, res) => {
   try {
     const { keyword, location, skill } = req.query;
@@ -66,50 +163,84 @@ exports.searchJobs = async (req, res) => {
 
     res.status(200).json({
       total: jobs.length,
-      jobs
+      jobs,
     });
 
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
-// APPLY JOB
+
+// ================== APPLY JOB ==================
 exports.applyJob = async (req, res) => {
   try {
-
-    const { jobId } = req.body;
-
-    if (req.user.role !== "jobseeker") {
-      return res.status(403).json({
-        message: "Only job seekers can apply"
-      });
-    }
+    const { jobId } = req.params;
 
     const alreadyApplied = await Application.findOne({
       job: jobId,
-      applicant: req.user.id
+      applicant: req.user.id,
     });
 
     if (alreadyApplied) {
       return res.status(400).json({
-        message: "You already applied for this job"
+        message: "You already applied for this job",
       });
     }
 
     const application = await Application.create({
       job: jobId,
-      applicant: req.user.id
+      applicant: req.user.id,
     });
 
     res.status(201).json({
-      message: "Application submitted successfully",
-      application
+      message: "Job applied successfully",
+      application,
     });
 
   } catch (error) {
-    res.status(500).json({
-      message: "Server Error"
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+// ================== MY APPLICATIONS ==================
+exports.getMyApplications = async (req, res) => {
+  try {
+    const applications = await Application.find({
+      applicant: req.user.id,
+    }).populate("job", "title company location");
+
+    res.status(200).json({
+      totalApplied: applications.length,
+      applications,
     });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+// ================== VIEW APPLICANTS ==================
+exports.getApplicants = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const applications = await Application.find({ job: jobId })
+      .populate("applicant", "name email")
+      .populate("job", "title company");
+
+    res.status(200).json({
+      totalApplicants: applications.length,
+      applications,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server Error" });
   }
 };
