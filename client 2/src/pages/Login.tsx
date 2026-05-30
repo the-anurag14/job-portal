@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -38,10 +39,7 @@ const Login = () => {
       toast.success("Welcome back!");
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Login failed";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "Login failed"));
     } finally {
       setSubmitting(false);
     }

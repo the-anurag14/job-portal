@@ -28,19 +28,31 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 
 
-// MongoDB
-mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-  console.log("MongoDB Connected ✅");
-})
-.catch((err) => {
-  console.log(err);
-});
-
-
-// Server
 const PORT = process.env.PORT || 8000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  if (!process.env.MONGO_URI) {
+    console.error("MONGO_URI is missing. Add it to your .env file.");
+    process.exit(1);
+  }
+
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is missing. Add it to your .env file.");
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB Connected ✅");
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Auth API: http://localhost:${PORT}/api/auth/register`);
+    });
+  } catch (err) {
+    console.error("Failed to start server:", err.message);
+    process.exit(1);
+  }
+};
+
+startServer();

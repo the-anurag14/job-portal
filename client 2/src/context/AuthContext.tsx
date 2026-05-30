@@ -85,7 +85,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string;
     role: UserRole;
   }) => {
-    await authService.register(payload);
+    const { data } = await authService.register(payload);
+    if (data.token && data.user) {
+      persistSession(data.token, data.user);
+    }
   };
 
   const value = useMemo(

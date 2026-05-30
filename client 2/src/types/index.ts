@@ -59,6 +59,7 @@ export interface AuthResponse {
 
 export interface RegisterResponse {
   message: string;
+  token: string;
   user: User;
 }
 

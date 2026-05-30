@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
@@ -44,13 +45,13 @@ const Register = () => {
     setSubmitting(true);
     try {
       await registerUser(data);
-      toast.success("Account created! Please sign in.");
-      navigate("/login");
+      toast.success("Account created!");
+      navigate(
+        data.role === "recruiter" ? "/dashboard/recruiter" : "/dashboard/candidate",
+        { replace: true }
+      );
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Registration failed";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "Registration failed"));
     } finally {
       setSubmitting(false);
     }
