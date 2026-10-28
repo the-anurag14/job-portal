@@ -2,6 +2,8 @@
 
 A RESTful backend service for a Job Portal application built with **Node.js**, **Express.js**, and **MongoDB (Mongoose)**, featuring JWT-based authentication and role-based access for Recruiters and Job Seekers.
 
+> 💡 **Unified Platform**: This backend connects seamlessly with the **WorkLink AI** frontend and ATS **Resume Builder Pro** suite.
+
 ---
 
 ## 🚀 Features
