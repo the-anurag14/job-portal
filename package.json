@@ -1,13 +1,21 @@
 {
   "name": "job-portal",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Full-featured Job Portal Backend with Authentication, Job Management, and Applications",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "job-portal",
+    "express",
+    "mongodb",
+    "mongoose",
+    "jwt",
+    "rest-api"
+  ],
+  "author": "Anurag Kumar",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
